@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlainSpeak Prompt Translator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Static prompt-engineering demo</p>
+        <h1>PlainSpeak Prompt Translator</h1>
+        <p class="subtitle">Turn vague human requests into structured, safer, prompt-engineered instructions.</p>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="Prompt translator">
+      <div class="input-panel">
+        <label for="requestInput">Plain-language request</label>
+        <textarea id="requestInput" rows="11" placeholder="Describe what you want the AI to help with. Use mock or public information only."></textarea>
+
+        <div class="examples" aria-label="Example requests">
+          <button type="button" class="chip">帮我总结这篇文章，写得专业一点</button>
+          <button type="button" class="chip">帮我检查这个 portfolio report 有没有逻辑问题</button>
+          <button type="button" class="chip">Write a Codex prompt to build a simple dashboard</button>
+          <button type="button" class="chip">Turn this AI use case into eval test cases</button>
+        </div>
+
+        <div class="controls-grid">
+          <div>
+            <label for="modeSelect">Mode</label>
+            <select id="modeSelect">
+              <option>General</option>
+              <option>Analyst</option>
+              <option>Coding</option>
+              <option>Writing</option>
+              <option>AI Risk</option>
+              <option>Evaluation</option>
+            </select>
+          </div>
+          <div>
+            <label for="languageSelect">Output language</label>
+            <select id="languageSelect">
+              <option>English Prompt</option>
+              <option>Chinese Prompt</option>
+              <option>English Prompt + Chinese Notes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="translateButton" class="primary" type="button">Translate into Structured Prompt</button>
+          <button id="clearButton" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="output-panel">
+        <div class="output-header">
+          <div>
+            <p class="eyebrow">Compiled result</p>
+            <h2>Prompt Card</h2>
+          </div>
+          <div class="button-row compact">
+            <button id="copyButton" type="button">Copy Prompt</button>
+            <button id="exportButton" type="button">Export Prompt Card</button>
+          </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          Enter a request, choose a mode, and translate it into a structured prompt card.
+        </div>
+
+        <div id="results" class="results hidden">
+          <section class="result-card">
+            <h3>Structured Prompt</h3>
+            <pre id="structuredPrompt"></pre>
+          </section>
+
+          <section class="result-card">
+            <h3>Missing Information</h3>
+            <ul id="missingInformation"></ul>
+          </section>
+
+          <section class="result-card">
+            <h3>Safety Notes</h3>
+            <ul id="safetyNotes"></ul>
+          </section>
+
+          <section class="result-card">
+            <h3>Quality Score</h3>
+            <div id="qualityScore" class="score-grid"></div>
+          </section>
+
+          <section class="result-card">
+            <h3>Prompt Card Preview</h3>
+            <pre id="promptCardPreview"></pre>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Built as a static prompt-engineering demo. Uses deterministic rules only.
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
