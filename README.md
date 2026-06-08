@@ -4,6 +4,12 @@ PlainSpeak Prompt Translator is a small static web app that turns plain-language
 
 The first version is fully rule-based. It uses no backend, no API key, no build step, and no external frameworks.
 
+## Use it online
+
+[Open the live app](https://beep-beep-creepy-sheep.github.io/Plainspeak-to-ai-prompt-translator/)
+
+This link works after GitHub Pages is enabled for the repository.
+
 ## Run locally
 
 Open `index.html` directly in a browser.
