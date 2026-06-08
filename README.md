@@ -8,7 +8,7 @@ The first version is fully rule-based. It uses no backend, no API key, no build 
 
 [Open the live app](https://beep-beep-creepy-sheep.github.io/Plainspeak-to-ai-prompt-translator/)
 
-This link works after GitHub Pages is enabled for the repository.
+Live site: https://beep-beep-creepy-sheep.github.io/Plainspeak-to-ai-prompt-translator/
 
 ## Run locally
 
