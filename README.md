@@ -19,6 +19,20 @@ Open `index.html` directly in a browser.
 
 You can also serve the folder with any static file server, but that is optional.
 
+## Test the compiler
+
+The core rule-based compiler can be checked without a browser:
+
+```bash
+node tests/compiler.test.js
+```
+
+This verifies the Prompt Card schema, structured output fields, and Chinese prompt formatting.
+
+## Prompt Card schema
+
+Generated prompt cards include a versioned structure with intent, inputs, outputs, constraints, acceptance criteria, open questions, safety boundaries, risks, quality scores, and the final structured prompt. Older UI sections are still kept for readability, while the JSON preview exposes the richer schema for future registry or eval workflows.
+
 ## Use Ollama mode
 
 1. Install and start Ollama.

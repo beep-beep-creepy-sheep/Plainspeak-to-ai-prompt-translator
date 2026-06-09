@@ -156,11 +156,14 @@ function compilePrompt(request, mode, outputLanguage) {
   const safetyBoundaries = buildSafetyBoundaries(mode);
   const qualityScore = scorePrompt(cleanRequest, missing, safetyBoundaries);
   const requestBreakdown = buildRequestBreakdown(cleanRequest, mode);
+  const promptCardFields = buildPromptCardFields(requestBreakdown, missing, safetyBoundaries, riskNotes, mode);
 
   const promptCard = {
+    schemaVersion: 2,
     originalRequest: cleanRequest,
     mode,
     outputLanguage,
+    ...promptCardFields,
     requestBreakdown,
     role: config.role,
     task: buildTask(cleanRequest, mode),
@@ -304,8 +307,90 @@ function normalizeModelCard(modelCard, fallbackCard) {
     qualityChecklist: arrayOrFallback(modelCard.qualityChecklist, fallbackCard.qualityChecklist),
     riskNotes: arrayOrFallback(modelCard.riskNotes, fallbackCard.riskNotes)
   };
+  Object.assign(
+    normalized,
+    buildPromptCardFields(
+      normalized.requestBreakdown,
+      normalized.missingInformation,
+      normalized.safetyBoundaries,
+      normalized.riskNotes,
+      normalized.mode
+    )
+  );
   normalized.qualityScore = scorePrompt(normalized.originalRequest, normalized.missingInformation, normalized.safetyBoundaries);
   return normalized;
+}
+
+function buildPromptCardFields(breakdown, missingInformation, safetyBoundaries, riskNotes, mode) {
+  return {
+    intent: {
+      type: modeToIntentType(mode),
+      summary: breakdown.userIntent
+    },
+    inputs: breakdown.detectedInputs,
+    outputs: breakdown.desiredOutputs,
+    constraints: buildStructuredConstraints(mode, safetyBoundaries),
+    acceptanceCriteria: buildAcceptanceCriteria(mode),
+    openQuestions: mergeUnique([
+      ...breakdown.openQuestions,
+      ...missingInformation.map((item) => `Clarify: ${item}`)
+    ]),
+    safety: {
+      boundaries: safetyBoundaries,
+      risks: riskNotes,
+      reviewRequired: true
+    }
+  };
+}
+
+function modeToIntentType(mode) {
+  const types = {
+    General: "general",
+    Analyst: "analysis",
+    Coding: "coding",
+    Writing: "writing",
+    "AI Risk": "ai-risk",
+    Evaluation: "evaluation"
+  };
+  return types[mode] || "general";
+}
+
+function buildStructuredConstraints(mode, safetyBoundaries) {
+  const modeConstraints = (MODE_CONFIG[mode] || MODE_CONFIG.General).constraints;
+  return mergeUnique([...modeConstraints, ...safetyBoundaries]);
+}
+
+function buildAcceptanceCriteria(mode) {
+  if (mode === "Coding") {
+    return [
+      "The prompt names the implementation goal, expected files or components, and primary user flow.",
+      "The prompt includes tests or manual verification steps.",
+      "The prompt names privacy and safety constraints before implementation starts."
+    ];
+  }
+  if (mode === "Evaluation") {
+    return [
+      "Each eval case has an input, expected behavior, and observable pass/fail criteria.",
+      "Unsafe or edge cases test safe handling without providing harmful instructions.",
+      "The scoring rubric is specific enough for a human reviewer to apply."
+    ];
+  }
+  if (mode === "AI Risk") {
+    return [
+      "The output identifies likely failure modes and misuse paths.",
+      "The output defines human review checkpoints.",
+      "The output avoids operational details that enable harm."
+    ];
+  }
+  return [
+    "The output preserves the user's intent without inventing unsupported facts.",
+    "Missing context is surfaced as questions or explicit assumptions.",
+    "Safety boundaries are visible and actionable."
+  ];
+}
+
+function mergeUnique(items) {
+  return [...new Set(items.filter(Boolean))];
 }
 
 function normalizeBreakdown(value, fallback) {
@@ -579,6 +664,7 @@ function clampScore(value) {
 function formatStructuredPrompt(card, outputLanguage) {
   const english = [
     card.understoodIntent ? `Understood Intent:\n${card.understoodIntent}` : "",
+    `Intent:\n- Type: ${card.intent.type}\n- Summary: ${card.intent.summary}`,
     `Request Breakdown:\n${formatBreakdown(card.requestBreakdown)}`,
     `Role:\n${card.role}`,
     `Task:\n${card.task}`,
@@ -586,7 +672,10 @@ function formatStructuredPrompt(card, outputLanguage) {
     `Instructions:\n${toBullets(card.instructions)}`,
     `Constraints:\n${toBullets(card.constraints)}`,
     `Output Format:\n${toBullets(card.outputFormat)}`,
+    `Acceptance Criteria:\n${toBullets(card.acceptanceCriteria)}`,
     `Safety Boundaries:\n${toBullets(card.safetyBoundaries)}`,
+    `Risks:\n${toBullets(card.safety.risks)}`,
+    `Open Questions:\n${toBullets(card.openQuestions)}`,
     `Quality Checklist:\n${toBullets(card.qualityChecklist)}`
   ].filter(Boolean).join("\n\n");
 
@@ -596,9 +685,9 @@ function formatStructuredPrompt(card, outputLanguage) {
 
   if (outputLanguage === "English Prompt + Chinese Notes") {
     return `${english}\n\n中文备注：\n${toBullets([
-      "请先确认缺失信息，再生成最终内容。",
-      "不要输入真实客户资料、账号、持仓或公司内部信息。",
-      "如涉及分析或风险判断，请标注不确定性并保留人工复核。"
+      "请先确认关键缺失信息，再生成最终内容。",
+      "不要输入真实客户资料、账号、持仓、公司内部信息或其他敏感数据。",
+      "如涉及分析、风险判断或自动化执行，请标注不确定性并保留人工复核。"
     ])}`;
   }
 
@@ -607,7 +696,8 @@ function formatStructuredPrompt(card, outputLanguage) {
 
 function toChinesePrompt(card) {
   return [
-    card.understoodIntent ? `理解后的意思：\n${card.understoodIntent}` : "",
+    card.understoodIntent ? `理解后的意图：\n${card.understoodIntent}` : `理解后的意图：\n${card.intent.summary}`,
+    `意图类型：\n- ${card.intent.type}`,
     `需求拆解：\n${formatBreakdown(card.requestBreakdown)}`,
     `角色：\n${card.role}`,
     `任务：\n${card.task}`,
@@ -615,9 +705,13 @@ function toChinesePrompt(card) {
     `执行步骤：\n${toBullets(card.instructions)}`,
     `限制条件：\n${toBullets(card.constraints)}`,
     `输出格式：\n${toBullets(card.outputFormat)}`,
+    `验收标准：\n${toBullets(card.acceptanceCriteria)}`,
     `安全边界：\n${toBullets(card.safetyBoundaries)}`,
+    `风险提示：\n${toBullets(card.safety.risks)}`,
+    `待确认问题：\n${toBullets(card.openQuestions)}`,
     `质量检查清单：\n${toBullets(card.qualityChecklist)}`
   ].filter(Boolean).join("\n\n");
+
 }
 
 function toBullets(items) {
