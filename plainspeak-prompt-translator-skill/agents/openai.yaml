@@ -1,0 +1,8 @@
+interface:
+  display_name: "PlainSpeak Prompt Translator"
+  short_description: "Turn messy requests into Prompt Cards"
+  brand_color: "#346C63"
+  default_prompt: "Use $plainspeak-prompt-translator to turn my rough idea into a structured Prompt Card and a Codex-ready prompt."
+
+policy:
+  allow_implicit_invocation: true
