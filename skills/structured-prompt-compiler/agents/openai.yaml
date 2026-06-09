@@ -1,0 +1,4 @@
+interface:
+  display_name: "Structured Prompt Compiler"
+  short_description: "Turn rough requests into structured AI prompts"
+  default_prompt: "Turn this rough request into a structured Prompt Card."
